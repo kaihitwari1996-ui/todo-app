@@ -2,3 +2,6 @@
 <resources>
     <style name="Theme.ProductivityPro" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>
+<resources>
+    <style name="Theme.TodoApp" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
