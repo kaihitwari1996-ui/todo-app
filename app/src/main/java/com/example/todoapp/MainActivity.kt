@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -51,11 +52,11 @@ fun MainApp(viewModel: AppViewModel = viewModel()) {
                 }
             )
         }
-    ) { padding ->
+    ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = "calendar",
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(innerPadding)
         ) {
             composable("calendar") { CalendarScreen(viewModel) }
             composable("notes") { NotesScreen(viewModel) }
