@@ -7,26 +7,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
+    object Todo     : Screen("todo",     "Tasks",    Icons.Default.CheckCircle)
     object Calendar : Screen("calendar", "Calendar", Icons.Default.CalendarMonth)
-    object Notes : Screen("notes", "Notes", Icons.Default.Note)
-    object Todo : Screen("todo", "To-Do", Icons.Default.CheckCircle)
+    object Notes    : Screen("notes",    "Notes",    Icons.Default.Notes)
+    object Habits   : Screen("habits",   "Habits",   Icons.Default.Loop)
+    object Settings : Screen("settings", "Theme",    Icons.Default.Palette)
 }
 
 @Composable
-fun BottomNavBar(
-    currentRoute: String,
-    onNavigate: (String) -> Unit
-) {
-    val items = listOf(Screen.Calendar, Screen.Notes, Screen.Todo)
-
+fun BottomNavBar(currentRoute: String, onNavigate: (String) -> Unit) {
     NavigationBar {
-        items.forEach { screen ->
-            NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = screen.title) },
-                label = { Text(screen.title) },
-                selected = currentRoute == screen.route,
-                onClick = { onNavigate(screen.route) }
-            )
-        }
+        listOf(Screen.Todo, Screen.Calendar, Screen.Notes, Screen.Habits, Screen.Settings)
+            .forEach { screen ->
+                NavigationBarItem(
+                    icon  = { Icon(screen.icon, screen.title) },
+                    label = { Text(screen.title, style = MaterialTheme.typography.labelSmall) },
+                    selected = currentRoute == screen.route,
+                    onClick  = { onNavigate(screen.route) }
+                )
+            }
     }
 }
