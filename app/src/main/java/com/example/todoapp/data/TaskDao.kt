@@ -1,7 +1,7 @@
 package com.example.todoapp.data
 
-import androidx.room.*
-import kotlinx.coroutines.flow.Flow
+import com.example.todoapp.data.entities.Task
+import com.example.todoapp.data.entities.SubTask
 
 @Dao
 interface TaskDao {
