@@ -5,7 +5,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -18,6 +18,7 @@ fun AppTheme(
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        else -> isSystemInDarkTheme() // fallback for other modes (PENCIL, etc.)
     }
 
     val colorScheme = if (darkTheme) {
@@ -52,55 +53,6 @@ fun AppTheme(
         )
     }
 
-    // iOS-style typography
-    val typography = Typography(
-        displayLarge = MaterialTheme.typography.displayLarge.copy(
-            fontFamily = FontFamily.Default
-        ),
-        displayMedium = MaterialTheme.typography.displayMedium.copy(
-            fontFamily = FontFamily.Default
-        ),
-        displaySmall = MaterialTheme.typography.displaySmall.copy(
-            fontFamily = FontFamily.Default
-        ),
-        headlineLarge = MaterialTheme.typography.headlineLarge.copy(
-            fontFamily = FontFamily.Default
-        ),
-        headlineMedium = MaterialTheme.typography.headlineMedium.copy(
-            fontFamily = FontFamily.Default
-        ),
-        headlineSmall = MaterialTheme.typography.headlineSmall.copy(
-            fontFamily = FontFamily.Default
-        ),
-        titleLarge = MaterialTheme.typography.titleLarge.copy(
-            fontFamily = FontFamily.Default
-        ),
-        titleMedium = MaterialTheme.typography.titleMedium.copy(
-            fontFamily = FontFamily.Default
-        ),
-        titleSmall = MaterialTheme.typography.titleSmall.copy(
-            fontFamily = FontFamily.Default
-        ),
-        bodyLarge = MaterialTheme.typography.bodyLarge.copy(
-            fontFamily = FontFamily.Default
-        ),
-        bodyMedium = MaterialTheme.typography.bodyMedium.copy(
-            fontFamily = FontFamily.Default
-        ),
-        bodySmall = MaterialTheme.typography.bodySmall.copy(
-            fontFamily = FontFamily.Default
-        ),
-        labelLarge = MaterialTheme.typography.labelLarge.copy(
-            fontFamily = FontFamily.Default
-        ),
-        labelMedium = MaterialTheme.typography.labelMedium.copy(
-            fontFamily = FontFamily.Default
-        ),
-        labelSmall = MaterialTheme.typography.labelSmall.copy(
-            fontFamily = FontFamily.Default
-        )
-    )
-
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -112,7 +64,7 @@ fun AppTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = typography,
+        typography = Typography(), // keep default; you can customize later
         content = content
     )
 }
