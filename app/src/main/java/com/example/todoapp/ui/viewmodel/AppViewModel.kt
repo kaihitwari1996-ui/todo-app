@@ -29,7 +29,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedDate  = MutableStateFlow(getTodayString())
     private val _taskFilter    = MutableStateFlow(TaskFilter.ALL)
     private val _tagFilter     = MutableStateFlow<Int?>(null)
-    private val _theme         = MutableStateFlow(ThemeMode.TICKTICK)
+    private val _theme = MutableStateFlow(ThemeMode.SYSTEM)
 
     // ─── Public StateFlows ────────────────────────────────────────
     val tags:          StateFlow<List<Tag>>               = _tags.asStateFlow()
