@@ -25,7 +25,10 @@ fun NoteDialog(
 ) {
     var title by remember { mutableStateOf(note?.title ?: "") }
     var content by remember { mutableStateOf(note?.content ?: "") }
-    var selTags by remember { mutableStateOf(note?.tagIds ?: emptySet()) }
+    var selTags by remember { mutableStateOf<Set<Int>>(
+    note?.tagIds?.split(",")?.filter { it.isNotBlank() }
+        ?.map { it.toInt() }?.toSet() ?: emptySet()
+) }
     var showTagField by remember { mutableStateOf(false) }
     var newTagName by remember { mutableStateOf("") }
 
