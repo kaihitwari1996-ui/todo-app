@@ -1,7 +1,11 @@
 package com.example.todoapp.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -24,7 +28,6 @@ fun CalendarScreen(vm: AppViewModel) {
     var noteContent by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // Load note for selected date
     LaunchedEffect(selectedDate) {
         vm.selectDate(selectedDate)
     }
@@ -52,7 +55,6 @@ fun CalendarScreen(vm: AppViewModel) {
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
         ) {
-            // Date selector
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -78,7 +80,6 @@ fun CalendarScreen(vm: AppViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Note for selected date
             GlassCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -123,7 +124,6 @@ fun CalendarScreen(vm: AppViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // List of all calendar notes (optional)
             if (calendarNotes.isNotEmpty()) {
                 Text(
                     text = "All Calendar Notes",
@@ -159,7 +159,6 @@ fun CalendarScreen(vm: AppViewModel) {
         }
     }
 
-    // Date picker placeholder
     if (showDatePicker) {
         AlertDialog(
             onDismissRequest = { showDatePicker = false },
@@ -167,7 +166,6 @@ fun CalendarScreen(vm: AppViewModel) {
             text = {
                 Column {
                     Text("Pick a date (placeholder)")
-                    // Use a real date picker library for production
                 }
             },
             confirmButton = {
