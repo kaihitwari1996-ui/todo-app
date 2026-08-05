@@ -1,14 +1,19 @@
-package com.example.todoapp.ui
+package com.example.todoapp.ui.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.*
-import com.example.todoapp.data.*
+import com.example.todoapp.data.AppDatabase
+import com.example.todoapp.data.Repository
+import com.example.todoapp.data.entities.Task
+import com.example.todoapp.data.entities.Note
+import com.example.todoapp.data.entities.CalendarNote
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
+
     private val repository: Repository
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
@@ -29,7 +34,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     init {
         val db = AppDatabase.getDatabase(application)
         repository = Repository(db.taskDao(), db.noteDao(), db.calendarNoteDao())
-
         viewModelScope.launch {
             repository.getAllTasks().collect { _tasks.value = it }
         }
@@ -54,9 +58,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteTask(task: Task) {
-        viewModelScope.launch {
-            repository.deleteTask(task)
-        }
+        viewModelScope.launch { repository.deleteTask(task) }
     }
 
     fun addNote(title: String, content: String) {
@@ -72,9 +74,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteNote(note: Note) {
-        viewModelScope.launch {
-            repository.deleteNote(note)
-        }
+        viewModelScope.launch { repository.deleteNote(note) }
     }
 
     fun selectDate(date: String) {
@@ -93,16 +93,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     companion object {
-        fun getTodayString(): String {
-            return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        }
+        fun getTodayString(): String =
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-        fun formatDate(timestamp: Long): String {
-            return SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(timestamp))
-        }
+        fun formatDate(timestamp: Long): String =
+            SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(timestamp))
 
-        fun parseDate(dateString: String): Date? {
-            return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString)
-        }
+        fun parseDate(dateString: String): Date? =
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString)
     }
-}
+} 
