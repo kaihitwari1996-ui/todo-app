@@ -6,7 +6,8 @@ import com.example.todoapp.data.entities.SubTask
 
 @Dao
 interface SubTaskDao {
-    @Query("SELECT * FROM subtasks WHERE taskId = :taskId")
+
+    @Query("SELECT * FROM sub_tasks WHERE taskId = :taskId")
     fun getSubTasks(taskId: Int): Flow<List<SubTask>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
