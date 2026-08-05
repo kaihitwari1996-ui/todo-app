@@ -1,4 +1,4 @@
-package com.example.todoapp.ui.screens
+ppackage com.example.todoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,11 +12,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.todoapp.data.Tag
+import com.example.todoapp.data.entities.Tag
+import com.example.todoapp.data.entities.Note
 
 @Composable
 fun NoteDialog(
-    note: com.example.todoapp.data.Note? = null,
+    note: Note? = null,
     tags: List<Tag> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (String, String, Set<Int>) -> Unit,
