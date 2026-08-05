@@ -77,11 +77,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Init ─────────────────────────────────────────────────────
     init {
-        val db = AppDatabase.getDatabase(application)
-        repository = Repository(
-            db.taskDao(), db.noteDao(), db.calendarNoteDao(),
-            db.tagDao(), db.subTaskDao(), db.habitDao()
-        )
+        // WITH THIS — order matches Repository constructor exactly
+val db = AppDatabase.getDatabase(application)
+repository = Repository(
+    taskDao        = db.taskDao(),
+    noteDao        = db.noteDao(),
+    calendarNoteDao = db.calendarNoteDao(),
+    tagDao         = db.tagDao(),
+    subTaskDao     = db.subTaskDao(),
+    habitDao       = db.habitDao()
+)
         viewModelScope.launch {
             repository.getAllTasks().collect { _allTasks.value = it }
         }
