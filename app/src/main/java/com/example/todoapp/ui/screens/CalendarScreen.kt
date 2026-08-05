@@ -23,7 +23,7 @@ import com.example.todoapp.data.entities.CalendarNote
 import com.example.todoapp.ui.viewmodel.AppViewModel
 import java.text.SimpleDateFormat
 import java.util.*
-
+import androidx.compose.foundation.BorderStroke
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(vm: AppViewModel) {
