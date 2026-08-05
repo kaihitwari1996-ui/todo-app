@@ -19,6 +19,8 @@ import com.example.todoapp.data.entities.Habit
 import com.example.todoapp.data.entities.HabitEntry
 import com.example.todoapp.ui.theme.HabitColors
 import com.example.todoapp.ui.viewmodel.AppViewModel
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
