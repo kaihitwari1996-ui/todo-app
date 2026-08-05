@@ -2,7 +2,10 @@ package com.example.todoapp.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,7 +40,6 @@ fun TodoScreen(vm: AppViewModel) {
     var showAdd by remember { mutableStateOf(false) }
     var expandedTaskId by remember { mutableStateOf<Int?>(null) }
 
-    // Load subtasks for expanded tasks
     LaunchedEffect(expandedTaskId) {
         expandedTaskId?.let { vm.loadSubTasks(it) }
     }
@@ -77,7 +79,7 @@ fun TodoScreen(vm: AppViewModel) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ---- Filter Tabs ----
+            // Filter tabs
             ScrollableTabRow(
                 selectedTabIndex = TaskFilter.values().indexOf(taskFilter),
                 edgePadding = 12.dp,
@@ -104,7 +106,7 @@ fun TodoScreen(vm: AppViewModel) {
                 }
             }
 
-            // ---- Tag Filter Chips ----
+            // Tag chips
             if (tags.isNotEmpty()) {
                 Row(
                     modifier = Modifier
@@ -156,7 +158,6 @@ fun TodoScreen(vm: AppViewModel) {
                 }
             }
 
-            // ---- Task List ----
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp),
@@ -177,7 +178,6 @@ fun TodoScreen(vm: AppViewModel) {
         }
     }
 
-    // ---- Add Task Dialog ----
     if (showAdd) {
         AddTaskDialog(
             onDismiss = { showAdd = false },
@@ -210,7 +210,6 @@ fun GlassTaskCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // ---- Checkbox ----
                 Checkbox(
                     checked = task.isCompleted,
                     onCheckedChange = { vm.toggleTask(task) },
@@ -220,7 +219,6 @@ fun GlassTaskCard(
                     )
                 )
 
-                // ---- Title ----
                 Text(
                     text = task.title,
                     style = MaterialTheme.typography.bodyLarge,
@@ -231,7 +229,6 @@ fun GlassTaskCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // ---- Priority Dot ----
                 if (task.priority != Priority.NONE) {
                     Box(
                         modifier = Modifier
@@ -248,7 +245,6 @@ fun GlassTaskCard(
                     )
                 }
 
-                // ---- Expand Button ----
                 IconButton(onClick = onExpand) {
                     Icon(
                         if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -262,7 +258,6 @@ fun GlassTaskCard(
                 Column(
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    // Description
                     if (task.description.isNotBlank()) {
                         Text(
                             text = task.description,
@@ -272,7 +267,6 @@ fun GlassTaskCard(
                         )
                     }
 
-                    // Due date
                     task.expiryDate?.let { timestamp ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -293,7 +287,6 @@ fun GlassTaskCard(
                         }
                     }
 
-                    // Category
                     if (task.category.isNotBlank()) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -307,7 +300,6 @@ fun GlassTaskCard(
                         }
                     }
 
-                    // Tags
                     val tagIds = task.tagIds.split(",").mapNotNull { it.toIntOrNull() }
                     if (tagIds.isNotEmpty()) {
                         Row(
@@ -334,7 +326,6 @@ fun GlassTaskCard(
                         }
                     }
 
-                    // ---- Subtasks ----
                     if (subTasks.isNotEmpty()) {
                         Text(
                             text = "Subtasks",
@@ -365,13 +356,12 @@ fun GlassTaskCard(
                         }
                     }
 
-                    // ---- Actions ----
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(
-                            onClick = { /* Edit – we'll implement later */ },
+                            onClick = { /* Edit */ },
                             colors = TextButtonDefaults.textButtonColors(
                                 contentColor = GlassPrimary
                             )
@@ -462,7 +452,6 @@ fun AddTaskDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Priority
                 Text(
                     "Priority",
                     style = MaterialTheme.typography.labelMedium
@@ -491,7 +480,6 @@ fun AddTaskDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Recurrence
                 Text(
                     "Recurrence",
                     style = MaterialTheme.typography.labelMedium
@@ -520,7 +508,6 @@ fun AddTaskDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Tags
                 if (tags.isNotEmpty()) {
                     Text(
                         "Tags",
@@ -565,7 +552,6 @@ fun AddTaskDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Due Date
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -625,16 +611,13 @@ fun AddTaskDialog(
         }
     )
 
-    // ---- Date Picker (simplified placeholder) ----
     if (showDatePicker) {
-        // For production, use a proper date picker library like `com.maxkeppeler.sheets:calendar`
         AlertDialog(
             onDismissRequest = { showDatePicker = false },
             title = { Text("Select Date") },
             text = {
                 Column {
                     Text("Pick a date (placeholder)")
-                    // You can add a simple date picker here
                 }
             },
             confirmButton = {
