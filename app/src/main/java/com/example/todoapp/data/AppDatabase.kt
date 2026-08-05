@@ -2,11 +2,24 @@ package com.example.todoapp.data
 
 import android.content.Context
 import androidx.room.*
-import com.example.todoapp.data.dao.*
-import com.example.todoapp.data.entities.*
+import com.example.todoapp.data.entities.Task
+import com.example.todoapp.data.entities.SubTask
+import com.example.todoapp.data.entities.Note
+import com.example.todoapp.data.entities.CalendarNote
+import com.example.todoapp.data.entities.Tag
+import com.example.todoapp.data.entities.Habit
+import com.example.todoapp.data.entities.HabitEntry
 
 @Database(
-    entities = [Task::class, SubTask::class, Note::class, CalendarNote::class, Tag::class, Habit::class, HabitEntry::class],
+    entities = [
+        Task::class,
+        SubTask::class,
+        Note::class,
+        CalendarNote::class,
+        Tag::class,
+        Habit::class,
+        HabitEntry::class
+    ],
     version = 1,
     exportSchema = false
 )
@@ -23,8 +36,11 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
-                Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "todo_db")
-                    .build().also { INSTANCE = it }
+                Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "todo_db"
+                ).build().also { INSTANCE = it }
             }
     }
 }
