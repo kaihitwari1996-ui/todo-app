@@ -1,9 +1,11 @@
 package com.example.todoapp.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,7 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.todoapp.data.entities.*
+import com.example.todoapp.data.entities.Priority
+import com.example.todoapp.data.entities.RecurrenceType
+import com.example.todoapp.data.entities.Task
 import com.example.todoapp.ui.components.GlassCard
 import com.example.todoapp.ui.theme.*
 import com.example.todoapp.ui.viewmodel.AppViewModel
@@ -30,9 +34,13 @@ fun TodoScreen(vm: AppViewModel) {
     val tags by vm.tags.collectAsState()
     val taskFilter by vm.taskFilter.collectAsState()
     val tagFilter by vm.tagFilter.collectAsState()
-    val subTasks by vm.subTasks.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
-    var expandedId by remember { mutableStateOf<Long?>(null) }
+    var expandedTaskId by remember { mutableStateOf<Int?>(null) }
+
+    // Load subtasks for expanded tasks
+    LaunchedEffect(expandedTaskId) {
+        expandedTaskId?.let { vm.loadSubTasks(it) }
+    }
 
     Scaffold(
         topBar = {
@@ -69,7 +77,7 @@ fun TodoScreen(vm: AppViewModel) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ---- Smart Filter Tabs ----
+            // ---- Filter Tabs ----
             ScrollableTabRow(
                 selectedTabIndex = TaskFilter.values().indexOf(taskFilter),
                 edgePadding = 12.dp,
@@ -136,7 +144,7 @@ fun TodoScreen(vm: AppViewModel) {
                                     Modifier
                                         .size(8.dp)
                                         .clip(CircleShape)
-                                        .background(Color(tag.color))
+                                        .background(Color(tag.color.toInt()))
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
@@ -156,13 +164,13 @@ fun TodoScreen(vm: AppViewModel) {
             ) {
                 items(
                     items = tasks,
-                    key = { it.id }
+                    key = { it.id ?: 0 }
                 ) { task ->
                     GlassTaskCard(
                         task = task,
                         vm = vm,
-                        expandedId = expandedId,
-                        onExpand = { expandedId = if (expandedId == task.id) null else task.id }
+                        expandedTaskId = expandedTaskId,
+                        onExpand = { expandedTaskId = if (expandedTaskId == task.id) null else task.id }
                     )
                 }
             }
@@ -173,8 +181,8 @@ fun TodoScreen(vm: AppViewModel) {
     if (showAdd) {
         AddTaskDialog(
             onDismiss = { showAdd = false },
-            onAdd = { title, description, priority, dueDate, tagId ->
-                vm.addTask(title, description, priority, dueDate, tagId)
+            onAdd = { title, description, category, priority, expiryDate, recurrenceType, tagIds ->
+                vm.addTask(title, description, category, priority, expiryDate, recurrenceType, tagIds)
                 showAdd = false
             },
             tags = tags
@@ -186,10 +194,11 @@ fun TodoScreen(vm: AppViewModel) {
 fun GlassTaskCard(
     task: Task,
     vm: AppViewModel,
-    expandedId: Long?,
+    expandedTaskId: Int?,
     onExpand: () -> Unit
 ) {
-    val isExpanded = expandedId == task.id
+    val isExpanded = expandedTaskId == task.id
+    val subTasks = if (isExpanded) vm.subTasks.value[task.id] ?: emptyList() else emptyList()
 
     GlassCard(
         modifier = Modifier
@@ -204,33 +213,25 @@ fun GlassTaskCard(
                 // ---- Checkbox ----
                 Checkbox(
                     checked = task.isCompleted,
-                    onCheckedChange = { vm.toggleTaskCompletion(task.id) },
+                    onCheckedChange = { vm.toggleTask(task) },
                     colors = CheckboxDefaults.colors(
                         checkedColor = GlassPrimary,
                         uncheckedColor = GlassGray
                     )
                 )
 
-                // ---- Task Title ----
+                // ---- Title ----
                 Text(
                     text = task.title,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (task.isCompleted) {
-                        GlassGray
-                    } else {
-                        MaterialTheme.colorScheme.onBackground
-                    },
-                    textDecoration = if (task.isCompleted) {
-                        TextDecoration.LineThrough
-                    } else {
-                        null
-                    },
+                    color = if (task.isCompleted) GlassGray else MaterialTheme.colorScheme.onBackground,
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // ---- Priority Badge ----
+                // ---- Priority Dot ----
                 if (task.priority != Priority.NONE) {
                     Box(
                         modifier = Modifier
@@ -257,13 +258,12 @@ fun GlassTaskCard(
                 }
             }
 
-            // ---- Expanded Content ----
             AnimatedVisibility(visible = isExpanded) {
                 Column(
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
                     // Description
-                    if (!task.description.isNullOrBlank()) {
+                    if (task.description.isNotBlank()) {
                         Text(
                             text = task.description,
                             style = MaterialTheme.typography.bodyMedium,
@@ -272,8 +272,8 @@ fun GlassTaskCard(
                         )
                     }
 
-                    // Due Date
-                    if (task.dueDate != null) {
+                    // Due date
+                    task.expiryDate?.let { timestamp ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -286,72 +286,80 @@ fun GlassTaskCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Due: ${java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(task.dueDate)}",
+                                text = "Due: ${AppViewModel.formatDate(timestamp)}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = GlassGray
                             )
                         }
                     }
 
-                    // Tag
-                    task.tagId?.let { tagId ->
-                        val tag = vm.tags.value.find { it.id == tagId }
-                        if (tag != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            ) {
-                                Box(
-                                    Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(tag.color))
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "#${tag.name}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = GlassGray
-                                )
+                    // Category
+                    if (task.category.isNotBlank()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        ) {
+                            Text(
+                                text = "📂 ${task.category}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = GlassGray
+                            )
+                        }
+                    }
+
+                    // Tags
+                    val tagIds = task.tagIds.split(",").mapNotNull { it.toIntOrNull() }
+                    if (tagIds.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.padding(bottom = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            tagIds.forEach { tagId ->
+                                val tag = vm.tags.value.find { it.id == tagId }
+                                if (tag != null) {
+                                    Box(
+                                        Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(Color(tag.color.toInt()).copy(alpha = 0.2f))
+                                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            "#${tag.name}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color(tag.color.toInt())
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
 
                     // ---- Subtasks ----
-                    val taskSubTasks = vm.subTasks.value.filter { it.taskId == task.id }
-                    if (taskSubTasks.isNotEmpty()) {
+                    if (subTasks.isNotEmpty()) {
                         Text(
                             text = "Subtasks",
                             style = MaterialTheme.typography.labelMedium,
                             color = GlassTextSecondary,
                             modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
                         )
-                        taskSubTasks.forEach { subTask ->
+                        subTasks.forEach { sub ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Checkbox(
-                                    checked = subTask.isCompleted,
-                                    onCheckedChange = { vm.toggleSubTaskCompletion(subTask.id) },
+                                    checked = sub.isCompleted,
+                                    onCheckedChange = { vm.toggleSubTask(sub) },
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = GlassPrimary,
                                         uncheckedColor = GlassGray
                                     )
                                 )
                                 Text(
-                                    text = subTask.title,
+                                    text = sub.title,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = if (subTask.isCompleted) {
-                                        GlassGray
-                                    } else {
-                                        MaterialTheme.colorScheme.onBackground
-                                    },
-                                    textDecoration = if (subTask.isCompleted) {
-                                        TextDecoration.LineThrough
-                                    } else {
-                                        null
-                                    }
+                                    color = if (sub.isCompleted) GlassGray else MaterialTheme.colorScheme.onBackground,
+                                    textDecoration = if (sub.isCompleted) TextDecoration.LineThrough else null
                                 )
                             }
                         }
@@ -363,7 +371,7 @@ fun GlassTaskCard(
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(
-                            onClick = { /* Edit action */ },
+                            onClick = { /* Edit – we'll implement later */ },
                             colors = TextButtonDefaults.textButtonColors(
                                 contentColor = GlassPrimary
                             )
@@ -371,7 +379,7 @@ fun GlassTaskCard(
                             Text("Edit")
                         }
                         TextButton(
-                            onClick = { vm.deleteTask(task.id) },
+                            onClick = { vm.deleteTask(task) },
                             colors = TextButtonDefaults.textButtonColors(
                                 contentColor = GlassError
                             )
@@ -388,14 +396,24 @@ fun GlassTaskCard(
 @Composable
 fun AddTaskDialog(
     onDismiss: () -> Unit,
-    onAdd: (String, String?, Priority, Long?, Long?) -> Unit,
-    tags: List<Tag>
+    onAdd: (
+        title: String,
+        description: String,
+        category: String,
+        priority: Priority,
+        expiryDate: Long?,
+        recurrenceType: RecurrenceType,
+        tagIds: List<Int>
+    ) -> Unit,
+    tags: List<com.example.todoapp.data.entities.Tag>
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var priority by remember { mutableStateOf(Priority.MEDIUM) }
-    var selectedTagId by remember { mutableStateOf<Long?>(null) }
-    var dueDate by remember { mutableStateOf<Long?>(null) }
+    var category by remember { mutableStateOf("General") }
+    var priority by remember { mutableStateOf(Priority.NONE) }
+    var expiryDate by remember { mutableStateOf<Long?>(null) }
+    var recurrenceType by remember { mutableStateOf(RecurrenceType.NONE) }
+    var selectedTagIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -431,13 +449,27 @@ fun AddTaskDialog(
                     )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = { category = it },
+                    label = { Text("Category") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = GlassPrimary,
+                        unfocusedBorderColor = GlassGray
+                    )
+                )
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Priority
                 Text(
                     "Priority",
                     style = MaterialTheme.typography.labelMedium
                 )
-                Row {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
                     Priority.values().forEach { p ->
                         FilterChip(
                             selected = priority == p,
@@ -459,21 +491,21 @@ fun AddTaskDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Tag
-                if (tags.isNotEmpty()) {
-                    Text(
-                        "Tag",
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState())
-                    ) {
+                // Recurrence
+                Text(
+                    "Recurrence",
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    RecurrenceType.values().forEach { r ->
                         FilterChip(
-                            selected = selectedTagId == null,
-                            onClick = { selectedTagId = null },
+                            selected = recurrenceType == r,
+                            onClick = { recurrenceType = r },
                             label = {
                                 Text(
-                                    "None",
+                                    r.name,
                                     style = MaterialTheme.typography.labelSmall
                                 )
                             },
@@ -483,10 +515,30 @@ fun AddTaskDialog(
                             ),
                             modifier = Modifier.padding(end = 4.dp)
                         )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Tags
+                if (tags.isNotEmpty()) {
+                    Text(
+                        "Tags",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState())
+                    ) {
                         tags.forEach { tag ->
                             FilterChip(
-                                selected = selectedTagId == tag.id,
-                                onClick = { selectedTagId = tag.id },
+                                selected = selectedTagIds.contains(tag.id),
+                                onClick = {
+                                    selectedTagIds = if (selectedTagIds.contains(tag.id)) {
+                                        selectedTagIds - tag.id
+                                    } else {
+                                        selectedTagIds + tag.id
+                                    }
+                                },
                                 label = {
                                     Text(
                                         "#${tag.name}",
@@ -498,7 +550,7 @@ fun AddTaskDialog(
                                         Modifier
                                             .size(8.dp)
                                             .clip(CircleShape)
-                                            .background(Color(tag.color))
+                                            .background(Color(tag.color.toInt()))
                                     )
                                 },
                                 colors = FilterChipDefaults.filterChipColors(
@@ -528,11 +580,8 @@ fun AddTaskDialog(
                         )
                     ) {
                         Text(
-                            if (dueDate != null) {
-                                java.text.SimpleDateFormat(
-                                    "MMM dd, yyyy",
-                                    java.util.Locale.getDefault()
-                                ).format(java.util.Date(dueDate!!))
+                            if (expiryDate != null) {
+                                AppViewModel.formatDate(expiryDate!!)
                             } else {
                                 "Set Date"
                             }
@@ -545,7 +594,15 @@ fun AddTaskDialog(
             TextButton(
                 onClick = {
                     if (title.isNotBlank()) {
-                        onAdd(title, description.takeIf { it.isNotBlank() }, priority, dueDate, selectedTagId)
+                        onAdd(
+                            title,
+                            description,
+                            category,
+                            priority,
+                            expiryDate,
+                            recurrenceType,
+                            selectedTagIds.toList()
+                        )
                     }
                 },
                 enabled = title.isNotBlank(),
@@ -568,56 +625,41 @@ fun AddTaskDialog(
         }
     )
 
-    // Date Picker Dialog
+    // ---- Date Picker (simplified placeholder) ----
     if (showDatePicker) {
-        DatePickerDialog(
+        // For production, use a proper date picker library like `com.maxkeppeler.sheets:calendar`
+        AlertDialog(
             onDismissRequest = { showDatePicker = false },
-            onDateSelected = { timestamp ->
-                dueDate = timestamp
-                showDatePicker = false
+            title = { Text("Select Date") },
+            text = {
+                Column {
+                    Text("Pick a date (placeholder)")
+                    // You can add a simple date picker here
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        expiryDate = System.currentTimeMillis()
+                        showDatePicker = false
+                    },
+                    colors = TextButtonDefaults.textButtonColors(
+                        contentColor = GlassPrimary
+                    )
+                ) {
+                    Text("Today")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDatePicker = false },
+                    colors = TextButtonDefaults.textButtonColors(
+                        contentColor = GlassGray
+                    )
+                ) {
+                    Text("Cancel")
+                }
             }
         )
     }
-}
-
-@Composable
-fun DatePickerDialog(
-    onDismissRequest: () -> Unit,
-    onDateSelected: (Long) -> Unit
-) {
-    // Simple date picker implementation
-    // For a production app, use a proper date picker library
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text("Select Date") },
-        text = {
-            Column {
-                Text("Date picker placeholder")
-                Text("Use a library like 'com.maxkeppeler.sheets:calendar' for a full implementation")
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    // Placeholder - set today's date
-                    onDateSelected(System.currentTimeMillis())
-                },
-                colors = TextButtonDefaults.textButtonColors(
-                    contentColor = GlassPrimary
-                )
-            ) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismissRequest,
-                colors = TextButtonDefaults.textButtonColors(
-                    contentColor = GlassGray
-                )
-            ) {
-                Text("Cancel")
-            }
-        }
-    )
 }
