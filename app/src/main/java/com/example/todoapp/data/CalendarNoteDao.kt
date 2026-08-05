@@ -1,7 +1,6 @@
 package com.example.todoapp.data
 
-import androidx.room.*
-import kotlinx.coroutines.flow.Flow
+import com.example.todoapp.data.entities.CalendarNote
 
 @Dao
 interface CalendarNoteDao {
