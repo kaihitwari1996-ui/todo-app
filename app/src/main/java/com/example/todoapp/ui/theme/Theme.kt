@@ -1,51 +1,45 @@
 package com.example.todoapp.ui.theme
 
 import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary   = FlowPrimary,
-    secondary = FlowSecondary,
-    tertiary  = FlowGreen,
-    background = FlowBackground,
-    surface    = FlowSurface
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary   = FlowPrimary,
-    secondary = FlowSecondary,
-    tertiary  = FlowGreen,
-    background = FlowBackground,
-    surface    = FlowSurface
-)
-
-private val AppTypography = Typography(
-    bodyLarge    = androidx.compose.ui.text.TextStyle(),
-    bodyMedium   = androidx.compose.ui.text.TextStyle(),
-    bodySmall    = androidx.compose.ui.text.TextStyle()
-)
+private val AppTypography = Typography()
 
 @Composable
-fun ToDoAppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+fun AppTheme(themeMode: ThemeMode, content: @Composable () -> Unit) {
+    val colorScheme = when (themeMode) {
+        ThemeMode.PENCIL   -> lightColorScheme(
+            primary    = PencilPrimary,
+            secondary  = PencilSecondary,
+            background = PencilBackground,
+            surface    = PencilSurface,
+            tertiary   = PencilAccent
+        )
+        ThemeMode.CLASSIC  -> lightColorScheme(
+            primary    = ClassicPrimary,
+            secondary  = ClassicSecondary,
+            background = ClassicBackground,
+            surface    = ClassicSurface
+        )
+        ThemeMode.TICKTICK -> lightColorScheme(
+            primary    = FlowPrimary,
+            secondary  = FlowSecondary,
+            background = FlowBackground,
+            surface    = FlowSurface,
+            tertiary   = FlowGreen
+        )
+        ThemeMode.AGRO     -> lightColorScheme(
+            primary    = AgroPrimary,
+            secondary  = AgroSecondary,
+            background = AgroBackground,
+            surface    = AgroSurface,
+            tertiary   = AgroAccent
+        )
     }
 
     val view = LocalView.current
@@ -53,13 +47,9 @@ fun ToDoAppTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography  = AppTypography,
-        content     = content
-    )
+    MaterialTheme(colorScheme = colorScheme, typography = AppTypography, content = content)
 }
