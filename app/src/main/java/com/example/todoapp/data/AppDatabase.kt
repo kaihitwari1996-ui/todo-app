@@ -10,6 +10,7 @@ import com.example.todoapp.data.entities.Tag
 import com.example.todoapp.data.entities.Habit
 import com.example.todoapp.data.entities.HabitEntry
 
+@TypeConverters(Converters::class)
 @Database(
     entities = [
         Task::class,
